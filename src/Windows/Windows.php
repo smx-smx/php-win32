@@ -1,5 +1,7 @@
 <?php
 /**
+  * Services Container
+  * 
   * @package php-win32
   * @author Stefano Moioli
   * @copyright 2021 Stefano Moioli
@@ -56,5 +58,17 @@ class Windows {
 
     public function getRegistry(){
         return new Registry($this);
+    }
+
+    public function getWindowsInstance(){
+        return new WindowsInstance($this);
+    }
+
+    public function getProcessManager(){
+        return new ProcessManager($this);
+    }
+
+    public function getPrivilegeManager(){
+        return new PrivilegeManager($this);
     }
 }

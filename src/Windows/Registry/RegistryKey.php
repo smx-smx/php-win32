@@ -98,9 +98,7 @@ class RegistryKey {
             //return null;
         }
         
-        $bufT = FFI::arrayType(FFI::type('uint8_t'), [$cbData->cdata]);
-        $buf = FFI::new($bufT);
-
+        $buf = $this->natSvc->malloc($cbData->cdata);
         $this->reg->RegGetValueW($this->handle, null,
             $valueNameW, Constants::RRF_RT_ANY,
             $pdwType, $buf, $pcbData

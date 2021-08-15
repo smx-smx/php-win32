@@ -14,8 +14,7 @@ use FFI\CType;
 class NativeUtils {
     public function strdup(string $str){
         $sz = strlen($str);
-        $strT = FFI::arrayType(FFI::type('uint8_t'), [$sz]);
-        $mem = FFI::new($strT);
+        $mem = $this->malloc($sz);
         FFI::memcpy($mem, $str, $sz);
         return $mem;
     }
@@ -27,9 +26,20 @@ class NativeUtils {
     }
 
     public function fromWSTR(string $str){
-        return iconv('WCHAR_T', 'UTF-8', $str);
+        return rtrim(iconv('WCHAR_T', 'UTF-8', $str), "\x00");
     }
     public function toWSTR(string $str){
         return iconv('UTF-8', 'WCHAR_T', $str) . "\x00\x00";
+    }
+
+    private CType $uint8_t;
+
+    public function malloc(int $sz){
+        $bufT = FFI::arrayType($this->uint8_t, [$sz]);
+        return FFI::new($bufT);
+    }
+
+    public function __construct(){
+        $this->uint8_t = FFI::type('uint8_t');
     }
 }

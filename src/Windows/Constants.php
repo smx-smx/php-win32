@@ -72,4 +72,6 @@ abstract class Constants {
     const TOKEN_ADJUST_PRIVILEGES = 0x0020;
 
     const STANDARD_RIGHTS_REQUIRED = 0x000F0000;
+
+    const MAX_PATH = 260;
 }
