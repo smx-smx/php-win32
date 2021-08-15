@@ -1,0 +1,16 @@
+{
+    "name": "sm/winternals",
+    "authors": [
+        {
+            "name": "Stefano Moioli",
+            "email": "smxdev4@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Smx\\": "src/"
+        }
+    },
+    "require": {}
+}
