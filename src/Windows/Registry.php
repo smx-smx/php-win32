@@ -60,7 +60,11 @@ class Registry {
         $subKeyW = $this->natSvc->toWSTR($subKey);
         $hkResult = $this->reg->newHKEY();
         
-        $result = $this->reg->RegOpenKeyExW($hkeyHandle, $subKeyW, $options, $samDesired, FFI::addr($hkResult));
+        $result = $this->reg->RegOpenKeyExW(
+            $hkeyHandle, $subKeyW,
+            $options, $samDesired,
+            FFI::addr($hkResult)
+        );
         if($result !== 0){
             return null;
         }

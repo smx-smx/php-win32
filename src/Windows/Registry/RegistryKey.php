@@ -16,6 +16,7 @@ use Smx\Windows\Utils\NativeUtils;
 use Smx\Windows\Windows;
 
 class RegistryKey {
+    private Windows $windows;
     private RegistryNative $reg;
     private CData $handle;
     private NativeUtils $natSvc;
@@ -24,8 +25,41 @@ class RegistryKey {
 
     private string $keyPath;
 
-    public function getPath(){
+    public function path(){
         return $this->keyPath;
+    }
+
+    public function rename(string $newName){
+        $newNameW = $this->natSvc->toWSTR($newName);
+        $result = $this->reg->RegRenameKey($this->handle, null, $newNameW);
+        if($result !== 0){
+            return false;
+        }
+        return true;
+    }
+
+    public function open(string $subPath){
+        $flags = (0
+            | Constants::KEY_ALL_ACCESS
+            | Constants::KEY_WOW64_64KEY
+        );
+
+        $subPathW = $this->natSvc->toWSTR($subPath);
+        $hkResult = $this->reg->newHKEY();
+
+        $result = $this->reg->RegOpenKeyExW(
+            $this->handle, $subPathW,
+            0, $flags, FFI::addr($hkResult)
+        );
+        if($result !== 0){
+            return null;
+        }
+
+        $newPath = "{$this->keyPath}\\{$subPath}";
+        return new RegistryKey(
+            $this->windows, $this->reg,
+            $newPath, $hkResult
+        );
     }
 
     /**
@@ -169,7 +203,46 @@ class RegistryKey {
         return true;
     }
 
-    public function enumerate(){
+    public function values(){
+        $info = new RegistryKeyInfo($this->reg, $this->handle);
+
+        $cchValueName = FFI::new('uint32_t');
+
+        $valueNameBuf = $info->newValueNameBuffer();
+
+        // list of value names
+        $valueNamesOut = array();
+
+        for($i=0; $i<$info->numberOfValues; $i++){  
+            $cchValueName->cdata = $info->maxValueNameLength;
+         
+            $dwType = FFI::new('uint32_t');
+            $ret = $this->reg->RegEnumValueW(
+                $this->handle, $i,
+                $valueNameBuf, FFI::addr($cchValueName),
+                null,
+                FFI::addr($dwType),
+                null, null
+            );
+            switch($ret){
+                case 0:
+                    $valueNameLength = $cchValueName->cdata * 2;
+                    $valueNameBin = FFI::string($valueNameBuf, $valueNameLength);
+                    $valueNameStr = $this->natSvc->fromWSTR($valueNameBin);
+                    $valueNamesOut[] = $valueNameStr;
+                    continue 2;
+                case 259: //ERROR_NO_MORE_ITEMS
+                    break 2;
+                default:
+                    break 2;
+            }
+        }
+
+        natcasesort($valueNamesOut);
+        return $valueNamesOut;
+    }
+
+    public function keys(){
         $info = new RegistryKeyInfo($this->reg, $this->handle);
 
         $cchName = FFI::new('uint32_t');
@@ -184,18 +257,15 @@ class RegistryKey {
         for($i=0; $i<$info->numberOfSubKeys; $i++){  
             $cchName->cdata = $info->maxKeyNameLength;
             $cchClass->cdata = $info->maxClassNameLength;
-
-            $lpcchName = FFI::addr($cchName);
-            $lpcchClass = FFI::addr($cchClass);
           
             $ret = $this->reg->RegEnumKeyExW(
                 $this->handle, $i,
-                $keyName, $lpcchName, null,
-                $udClass, $lpcchClass, null
+                $keyName, FFI::addr($cchName), null,
+                $udClass, FFI::addr($cchClass), null
             );
             switch($ret){
                 case 0:
-                    $keyNameLen = $lpcchName[0] * 2;
+                    $keyNameLen = $cchName->cdata * 2;
                     $keyNameBin = FFI::string($keyName, $keyNameLen);
                     $keyNameStr = $this->natSvc->fromWSTR($keyNameBin);
                     $keyNamesOut[] = $keyNameStr;
@@ -212,6 +282,7 @@ class RegistryKey {
     }
 
     public function __construct(Windows $windows, RegistryNative $reg, string $keyPath, CData $handle){
+        $this->windows = $windows;
         $this->reg = $reg;
         $this->handle = $handle;
         $this->keyPath = $keyPath;
@@ -221,5 +292,9 @@ class RegistryKey {
 
     public function __destruct(){
         $this->reg->RegCloseKey($this->handle);
+    }
+
+    public function basename(){
+        return basename($this->keyPath);
     }
 }

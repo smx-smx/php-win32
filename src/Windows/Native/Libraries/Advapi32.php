@@ -25,6 +25,7 @@ class Advapi32 extends NativeLibrary {
             typedef void* HKEY, *PHKEY;
             typedef void* LPCWSTR;
             typedef void* LPVOID;
+            typedef void* LPBYTE;
             typedef const void* LPCVOID;
             typedef uint32_t DWORD, *PDWORD, *LPDWORD;
             typedef uint32_t REGSAM;
@@ -100,6 +101,21 @@ class Advapi32 extends NativeLibrary {
                 LPWSTR    lpClass,
                 LPDWORD   lpcchClass,
                 PFILETIME lpftLastWriteTime
+            );
+            LSTATUS RegEnumValueW(
+                HKEY    hKey,
+                DWORD   dwIndex,
+                LPWSTR  lpValueName,
+                LPDWORD lpcchValueName,
+                LPDWORD lpReserved,
+                LPDWORD lpType,
+                LPBYTE  lpData,
+                LPDWORD lpcbData
+            );
+            LSTATUS RegRenameKey(
+                HKEY    hKey,
+                LPCWSTR lpSubKeyName,
+                LPCWSTR lpNewKeyName
             );
             LSTATUS RegGetValueW(
                 HKEY    hkey,
